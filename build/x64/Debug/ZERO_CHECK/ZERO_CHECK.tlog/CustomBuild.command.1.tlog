@@ -1,0 +1,10 @@
+^C:\USERS\MP725\ONEDRIVE\DOCUMENTS\GAME DEV\C\TESTINGANONYMOUSCALLS\BUILD\CMAKEFILES\7E53721EF16CB5C547204307D027D6A0\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files (x86)\CMake\bin\cmake.exe" "-SC:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls" "-BC:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/build/TestingCalls.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

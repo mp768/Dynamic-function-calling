@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/main.c
+stdio.h
+C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/stdio.h
+stdlib.h
+C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/stdlib.h
+stdint.h
+C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/stdint.h
+
