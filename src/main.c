@@ -1,6 +1,12 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "stdint.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <malloc.h>
+#include <time.h>
+
+#include "vm.h"
+
+//void* alloca(size_t mem);
 
 /*
     Windows abi:
@@ -78,269 +84,270 @@ int add_float7(float a, float b, float c, float d, float e, float f, float g) {
         mov     DWORD PTR [rbp-4], eax
 */
 
-// DO NOT OPTIMIZE THIS HIGHER THAN 0
+// DO NOT OPTIMIZE HIGHER THAN 0
 // I need the behavior to stay the EXACT same, since the optimization wouldn't account for many other things!
-__attribute__((optimize(0)))
-int caller(int a1, int a2, void* fptr) {
-    register int32_t ires32 __asm__("eax");
 
-    register int32_t move_register1 __asm__("edx");
-    register int32_t move_register2 __asm__("eax");
+// reference assembly
+//  __asm__("mov     %%rax, %0" :: "g"(value));      \
+//  __asm__("lea     %rdx, [%rax+8]");                \
+    __asm__("mov     %eax, 16");                     \
+    __asm__("sub     %rax, 1");                      \
+    __asm__("add     %rax, %rdx");                    \
+    __asm__("mov     %ecx, 16");                     \
+    __asm__("mov     %edx, 0");                      \
+    __asm__("div     %rcx");                         \
+    __asm__("imul    %rax, %rax, 16");                \
+    __asm__("sub     %rsp, %rax");                    \
+    __asm__("mov     %rax, %rsp");                    \
+    __asm__("add     %rax, 15");                     \
+    __asm__("shr     %rax, 4");                      \
+    __asm__("sal     %rax, 4");                      \
+    __asm__("mov     %0, %%rax" :: "g"(output));
 
-    register int32_t i1arg32 __asm__("ecx");
-    register int32_t i2arg32 __asm__("edx");
+// produces exit code "-1073741819"
+#define gcc_alloca_impl(output, value)                      \
+    __asm__("mov     %0, %%rax" :: "g"(value));      \
+    __asm__("lea     8(%rax), %rdx");                \
+    __asm__("mov     $16, %eax");                     \
+    __asm__("sub     $1, %rax");                      \
+    __asm__("add     %rdx, %rax");                    \
+    __asm__("mov     $16, %ecx");                     \
+    __asm__("mov     $0, %edx");                      \
+    __asm__("div     %rcx");                         \
+    __asm__("imul    $16, %rax, %rax");                \
+    __asm__("sub     %rax, %rsp");                    \
+    __asm__("mov     %rsp, %rax");                    \
+    __asm__("add     $15, %rax");                     \
+    __asm__("shr     $4, %rax");                      \
+    __asm__("sal     $4, %rax");                      \
+    __asm__("mov     %%rax, %0" :: "g"(output));
 
-    i1arg32 = a2;
-    i2arg32 = a1;
-
-    // __asm__("call %P0" : : "i"(add));
-
-    ((int(*)())fptr)();
-    int r = ires32;
-    // int(*result)() = ((int(*)())fptr);
-
-    // move_register1 = a1;
-    // move_register2 = a2;
-
-    // i1arg32 = move_register1;
-    // i2arg32 = move_register2;
-
-    // int r = result();
-
-
-    // int result = ires32;
-    ires32 = 0;
-
-    return r;
+int add8s(int8_t a, int8_t b, int8_t c, int8_t d, int8_t e, int8_t f) {
+    return (int)a + b + c + d + e + f;
 }
 
-typedef struct Value {
-    union {
-        int32_t i32;
-        float f32;
-        double f64;
-    } as;
+int add_random_stuff(int32_t a, int8_t b, float c, double d, int32_t e, int8_t f) {
+    printf("a is %i\n", a);
+    printf("b is %i\n", b);
+    printf("c is %g\n", c);
+    printf("d is %g\n", d);
+    printf("e is %i\n", e);
+    printf("f is %i\n", f);
 
-    enum {
-        I32,
-        F32,
-        F64,
-    } is;
-} Value;
-
-typedef struct VM {
-    Value* values;
-    int len;
-    int size;
-} VM;
-
-void init_vm(VM* vm) {
-    vm->values = malloc(256 * sizeof(Value));
-    vm->len = 0;
-    vm->size = 256;
+    return a + b + c + d + e + f;
 }
 
-void clear_vm(VM* vm) {
-    vm->len = 0;
+int say_hi(const char* str) {
+    printf("hello %s\n", str);
+    return 2;
 }
 
-void destroy_vm(VM* vm) {
-    free(vm->values);
-    vm->len = 0;
-    vm->size = 0;
+int modify_value(double* a) {
+    *a = 4.5;
+    return 0;
 }
 
-__attribute__((optimize(0)))
-void pass_int(VM* vm, int a) {
-    vm->values[vm->len] = (Value) {
-        .as.i32 = a,
-        .is = I32,
-    };
-    vm->len++;
+const char* get_some_string() {
+    return "Hello String";
 }
 
-__attribute__((optimize(0)))
-void pass_float(VM* vm, float a) {
-    vm->values[vm->len] = (Value) {
-        .as.f32 = a,
-        .is = F32,
-    };
-    vm->len++;
-}
+uint64_t get_an_int(int32_t j) {
+    uint64_t sum = 0;
 
-__attribute__((optimize(0)))
-void pass_double(VM* vm, double a) {
-    vm->values[vm->len] = (Value) {
-        .as.f64 = a,
-        .is = F64,
-    };
-    vm->len++;
-}
-
-// working on the x86 win32 version of the abi matching right now, then I will change it to work on linux as well.
-__attribute((optimize(0)))
-int call_func(VM* vm, void* fptr) {
-    // probably going to have to do pure assembly here, well fuck.
-
-    register int32_t ires32 __asm__("eax");
-    register int32_t i1 __asm__("rcx");
-    register int32_t i2 __asm__("rdx");
-    register int32_t i3 __asm__("r8");
-    register int32_t i4 __asm__("r9");
-    register float f1 __asm__("xmm0");
-    register float f2 __asm__("xmm1");
-    register float f3 __asm__("xmm2");
-    register float f4 __asm__("xmm3");
-    register size_t sp __asm__("rsp");
-    const register size_t bp __asm__("rbp");
-
-    #define WIN32_ASSIGN_VALUE(value, integer_register, float_register)                     \
-        if (value.is == I32) {                                                              \
-            integer_register = value.as.i32;                                                \
-        } else if (value.is == F32) {                                                       \
-            float_register = value.as.f32;                                                  \
-        } else if (value.is == F64) {                                                       \
-            float_register = value.as.f64;                                                  \
-        }
-
-
-    size_t total_memory = 0;
-
-    switch (vm->len) {
-        default:
-            if (vm->len == 0) break;
-            {
-                // total_memory = 32;
-                int len = vm->len - 4;
-
-                for (int i = 0; i < len; i++) {
-                    // TODO: Add the checks for other types once I add them
-                    if (vm->values[4+i].is == I32) {
-                        total_memory += sizeof(int32_t);
-                    } else if (vm->values[4+i].is == F32) {
-                        total_memory += sizeof(float);
-                    }
-                }
-
-                // sp -= total_memory;
-                // printf("SP %i\n", sp);
-                void* sptr = alloca(total_memory);
-                // printf("SP %i\n", sp);
-
-                // sp += total_memory;
-
-                #define DEFAULT_X86_64_ALIGNMENT 8
-
-                for (int i = 0; i < len; i++) {
-                    if (vm->values[4+i].is == I32) {
-                        volatile int32_t* ptr = (volatile int32_t*)sptr;
-
-                        *ptr = vm->values[4+i].as.i32;
-
-                        sptr += DEFAULT_X86_64_ALIGNMENT;
-                    } else if (vm->values[4+i].is == F32) {
-                        volatile float* ptr = (volatile float*)sptr;
-
-                        *ptr = vm->values[4+i].as.f32;
-
-                        sptr += DEFAULT_X86_64_ALIGNMENT;
-                    }
-                }
-
-                #undef DEFAULT_X86_64_ALIGNMENT
-            }
-
-        case 4:
-            WIN32_ASSIGN_VALUE(vm->values[3], i4, f4);
-        case 3:
-            WIN32_ASSIGN_VALUE(vm->values[2], i3, f3);
-        case 2:
-            WIN32_ASSIGN_VALUE(vm->values[1], i2, f2);
-        case 1:
-            WIN32_ASSIGN_VALUE(vm->values[0], i1, f1);
-            break;
+    for (int32_t i = j; i >= 0; i--) {
+        sum += i;
+        sum *= 2;
+        sum -= 1;
     }
 
-    // i1 = vm->values[0].as.i32;
-    // i2 = vm->values[1].as.i32;
-    // i3 = vm->values[2].as.i32;
-    // i4 = vm->values[3].as.i32;
-
-    int r = ((int(*)())fptr)();
-
-    // sp += total_memory;
-
-    #undef WIN32_ASSIGN_VALUE
-
-    return r;
+    return sum;
 }
+
+struct TESTSTRUCT {
+    int8_t a;
+    int8_t b;
+    int32_t c;
+    int8_t d;
+};
+
+struct TESTSTRUCT2 {
+    struct TESTSTRUCT a;
+    int64_t b;
+};
 
 int main() {
     printf("Hello, World!\n");
 
-    printf("Hello %i\n", caller(3, 9, (void*)add));
+    //printf("Hello %i\n", caller(3, 9, (void*)add));
 
-    // pass_int1(2);
-    // pass_int2(5);
+    // pass_i321(2);
+    // pass_i322(5);
 
     // printf("HELLO AGAIN %i\n", call_func((void*)add));
 
     VM vm;
     init_vm(&vm);
 
-    pass_int(&vm, 2);
-    pass_int(&vm, 3);
+    /*
+    clock_t start = clock();
 
-    printf("HELLOOOOOOO %i\n", call_func(&vm, (void*)add));
+    double temp_val = 0;
+    double temp_sum = 0;
+    for (size_t i = 0; i < INT_MAX / 64; i++) {
+        pass_ptr(&vm, (void*)&temp_val);
+        call_func(&vm, (void*)modify_value);
 
-    clear_vm(&vm);
+        temp_sum += temp_val;
 
-    pass_int(&vm, 3);
-    pass_int(&vm, 2);
-    pass_int(&vm, 5);
-    pass_int(&vm, 6);
+        clear_vm(&vm);
+    }
 
-    printf("HELLOO AGAIN %i\n", call_func(&vm, (void*)add4));
+    clock_t end = clock();
 
-    clear_vm(&vm);
+    double time_spent = (double)(end-start);
 
-    pass_int(&vm, 4);
-    pass_int(&vm, 5);
-    pass_int(&vm, 4);
+    printf("Temp sum: %g\nTime spent %g\nstart %ld\nend %ld\n", temp_sum, time_spent, start, end);
+    */
 
-    printf("HELLO3 %i\n", call_func(&vm, (void*)add3));
+    pass_i32(&vm, 2);
+    pass_i32(&vm, 3);
 
-    clear_vm(&vm);
-
-    pass_int(&vm, 1);
-    pass_int(&vm, 2);
-    pass_int(&vm, 3);
-    pass_int(&vm, 4);
-    pass_int(&vm, 19);
-    pass_int(&vm, 9);
-    pass_int(&vm, 9);
-
-    printf("Hello5 %i\n", call_func(&vm, (void*)add7));
+    printf("HELLOOOOOOO %i\n", call_func_i32(&vm, (void*)add));
 
     clear_vm(&vm);
 
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
+    pass_i32(&vm, 3);
+    pass_i32(&vm, 2);
+    pass_i32(&vm, 5);
+    pass_i32(&vm, 6);
 
-    printf("Hello Float %i\n", call_func(&vm, (void*)add_float));
+    printf("HELLOO AGAIN %i\n", call_func_i32(&vm, (void*)add4));
 
     clear_vm(&vm);
 
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 3.5);
-    pass_float(&vm, 5.0);
+    pass_i32(&vm, 4);
+    pass_i32(&vm, 5);
+    pass_i32(&vm, 4);
 
-    printf("Hello float7 %i\n", call_func(&vm, (void*)add_float7));
+    printf("HELLO3 %i\n", call_func_i32(&vm, (void*)add3));
+
+    clear_vm(&vm);
+
+    pass_i32(&vm, 1);
+    pass_i32(&vm, 2);
+    pass_i32(&vm, 3);
+    pass_i32(&vm, 4);
+    pass_i32(&vm, 19);
+    pass_i32(&vm, 9);
+    pass_i32(&vm, 9);
+
+    printf("Hello5 %i\n", call_func_i32(&vm, (void*)add7));
+
+    clear_vm(&vm);
+
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+
+    printf("Hello Float %i\n", call_func_i32(&vm, (void*)add_float));
+
+    clear_vm(&vm);
+
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 3.5);
+    pass_f32(&vm, 5.67);
+
+    printf("Hello float7 %i\n", call_func_i32(&vm, (void*)add_float7));
+
+    clear_vm(&vm);
+
+    pass_i8(&vm, 1);
+    pass_i8(&vm, 1);
+    pass_i8(&vm, 1);
+    pass_i8(&vm, 1);
+    pass_i8(&vm, 1);
+    pass_i8(&vm, -1);
+
+    printf("Hello i8s %i\n", call_func_i32(&vm, (void*)add8s));
+
+    clear_vm(&vm);
+
+    pass_i32(&vm, 3);
+    pass_i8(&vm, 14);
+    pass_f32(&vm, 23.45f);
+    pass_f64(&vm, 45.65);
+    pass_i32(&vm, 4);
+    pass_i8(&vm, 12);
+
+    printf("HELLO RESULT %i\n", call_func_i32(&vm, (void*)add_random_stuff));
+
+    clear_vm(&vm);
+    
+    pass_str(&vm, "Michael");
+
+    call_func(&vm, (void*)say_hi);
+
+    clear_vm(&vm);
+    
+    double dval = 0.0;
+
+    pass_ptr(&vm, (void*)&dval);
+
+    printf("Before value is modified it is %g\n", dval);
+
+    call_func(&vm, (void*)modify_value);
+
+    printf("The modifed values is now %g\n", dval);
+
+    clear_vm(&vm);
+
+    const char* temp_str = call_func_str(&vm, (void*)get_some_string);
+    
+    printf("Output of function with return of string is \"%s\"\n", temp_str);
+   
+    clear_vm(&vm);
+
+    pass_i32(&vm, 50);
+
+    printf("Output of function is %llu\n", call_func_u64(&vm, (void*)get_an_int));
 
     destroy_vm(&vm);
+
+    StructConstructor sc;
+
+    init_struct_constructor(&sc);
+
+    start_creating_struct(&sc, false);
+
+    add_field_i8(&sc);
+    add_field_i8(&sc);
+    add_field_i32(&sc);
+    add_field_i8(&sc);
+
+    StructType type = construct_struct_type(&sc);
+
+    printf("Len %i, Size %i, Struct_Size %i, Actual Struct Size %i\n", type.len, type.size, type.struct_size, sizeof(struct TESTSTRUCT));
+
+    for (int i = 0; i < type.len; i++) {
+        printf("Pos %i, Type %i\n", type.elements[i].pos, type.elements[i].type);
+    }
+
+    start_creating_struct(&sc, false);
+
+    add_field_struct(&sc, &type);
+    add_field_i64(&sc);
+
+    StructType type2 = construct_struct_type(&sc);
+    
+    // the sizes match up, interesting!
+    printf("Lne %i, Size %i, Struct Size %i, Actual Struct Size %i\n", type2.len, type2.size, type2.struct_size, sizeof(struct TESTSTRUCT2));
+
+    for (int i = 0; i < type2.len; i++) {
+        printf("Pos %i, Type %i\n", type2.elements[i].pos, type2.elements[i].type);
+    }
+
     return 0;
 }
