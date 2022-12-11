@@ -5,6 +5,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
   "C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/main.c" "C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/build/CMakeFiles/TestingCalls.dir/src/main.c.obj"
+  "C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/src/vm.c" "C:/Users/mp725/OneDrive/Documents/Game Dev/C/TestingAnonymousCalls/build/CMakeFiles/TestingCalls.dir/src/vm.c.obj"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 

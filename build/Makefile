@@ -168,6 +168,33 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\TestingCalls.dir\build.make CMakeFiles/TestingCalls.dir/src/main.c.s
 .PHONY : src/main.c.s
 
+src/vm.obj: src/vm.c.obj
+
+.PHONY : src/vm.obj
+
+# target to build an object file
+src/vm.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TestingCalls.dir\build.make CMakeFiles/TestingCalls.dir/src/vm.c.obj
+.PHONY : src/vm.c.obj
+
+src/vm.i: src/vm.c.i
+
+.PHONY : src/vm.i
+
+# target to preprocess a source file
+src/vm.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TestingCalls.dir\build.make CMakeFiles/TestingCalls.dir/src/vm.c.i
+.PHONY : src/vm.c.i
+
+src/vm.s: src/vm.c.s
+
+.PHONY : src/vm.s
+
+# target to generate assembly for a file
+src/vm.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TestingCalls.dir\build.make CMakeFiles/TestingCalls.dir/src/vm.c.s
+.PHONY : src/vm.c.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -180,6 +207,9 @@ help:
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s
+	@echo ... src/vm.obj
+	@echo ... src/vm.i
+	@echo ... src/vm.s
 .PHONY : help
 
 

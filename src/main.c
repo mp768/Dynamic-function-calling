@@ -175,6 +175,22 @@ struct TESTSTRUCT2 {
     int64_t b;
 };
 
+typedef struct {
+    int64_t a;
+    uint64_t b;
+} TestStruct3;
+
+uint64_t get_value_from_struct(TestStruct3 val) {
+    return (uint64_t)val.a + val.b; 
+}
+
+TestStruct3 get_struct_value_from_value(uint64_t a) {
+    return (TestStruct3) {
+        .a = (int64_t)(a * 2),
+        .b = a,
+    };
+}
+
 int main() {
     printf("Hello, World!\n");
 
@@ -314,40 +330,75 @@ int main() {
 
     printf("Output of function is %llu\n", call_func_u64(&vm, (void*)get_an_int));
 
-    destroy_vm(&vm);
-
     StructConstructor sc;
 
     init_struct_constructor(&sc);
 
-    start_creating_struct(&sc, false);
+    start_creating_struct_type(&sc, false);
 
     add_field_i8(&sc);
     add_field_i8(&sc);
     add_field_i32(&sc);
     add_field_i8(&sc);
 
-    StructType type = construct_struct_type(&sc);
+    StructType* type = construct_struct_type(&sc);
 
-    printf("Len %i, Size %i, Struct_Size %i, Actual Struct Size %i\n", type.len, type.size, type.struct_size, sizeof(struct TESTSTRUCT));
+    printf("Len %i, Size %i, Struct_Size %i, Actual Struct Size %i\n", type->len, type->size, type->struct_size, sizeof(struct TESTSTRUCT));
 
-    for (int i = 0; i < type.len; i++) {
-        printf("Pos %i, Type %i\n", type.elements[i].pos, type.elements[i].type);
+    for (int i = 0; i < type->len; i++) {
+        printf("Pos %i, Type %i\n", type->elements[i].pos, type->elements[i].type);
     }
 
-    start_creating_struct(&sc, false);
+    start_creating_struct_type(&sc, false);
 
-    add_field_struct(&sc, &type);
+    add_field_struct(&sc, type);
     add_field_i64(&sc);
 
-    StructType type2 = construct_struct_type(&sc);
+    StructType* type2 = construct_struct_type(&sc);
     
     // the sizes match up, interesting!
-    printf("Lne %i, Size %i, Struct Size %i, Actual Struct Size %i\n", type2.len, type2.size, type2.struct_size, sizeof(struct TESTSTRUCT2));
+    printf("Lne %i, Size %i, Struct Size %i, Actual Struct Size %i\n", type2->len, type2->size, type2->struct_size, sizeof(struct TESTSTRUCT2));
 
-    for (int i = 0; i < type2.len; i++) {
-        printf("Pos %i, Type %i\n", type2.elements[i].pos, type2.elements[i].type);
+    for (int i = 0; i < type2->len; i++) {
+        printf("Pos %i, Type %i\n", type2->elements[i].pos, type2->elements[i].type);
     }
 
+    start_creating_struct_type(&sc, false);
+    add_field_i64(&sc);
+    add_field_u64(&sc);
+
+    StructType* type3 = construct_struct_type(&sc);
+
+    StructValue* value = make_struct_value(type3);
+
+    set_struct_field_i64(value, 0, 3);
+    set_struct_field_u64(value, 1, 4);
+
+    clear_vm(&vm);
+
+    pass_struct(&vm, value);
+
+    printf("Value of operation with struct type is %u\n", call_func_u64(&vm, (void*)get_value_from_struct));
+
+    printf("First Struct field 0 is %lli\n", get_struct_field_i64(value, 0));
+    printf("First Struct field 1 is %llu\n", get_struct_field_u64(value, 1));
+
+    clear_vm(&vm);
+
+    pass_u64(&vm, 2);
+
+    TestStruct3 a = get_struct_value_from_value(2);
+
+    printf("RESULT IS %lli and %llu\n", a.a, a.b);
+
+    // I couldn't get struct returns to work, so do not use it :)
+    // StructValue* value2 = call_func_struct(&vm, type3, (void*)get_struct_value_from_value);
+
+    // printf("Result Struct field 0 is %lli\n", get_struct_field_i64(value2, 0));
+    // printf("Result Struct field 1 is %llu\n", get_struct_field_u64(value2, 1));
+
+
+    destroy_struct_constructor(&sc);
+    destroy_vm(&vm);
     return 0;
 }
